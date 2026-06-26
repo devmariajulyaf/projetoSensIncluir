@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#04080f">
+<title>SensIncluir® — Aprender sem barreiras</title>
+<style>
+/* ═══════════════════════════════════════════
+   RESET & TOKENS
+═══════════════════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
+:root{
+  --bg:#04080f; --bg1:#070d18; --bg2:#0b1428;
+  --fs0:14px; --fs1:16px; --fs2:18px; --fs3:22px; --fs4:28px; --fs5:34px; --fs6:44px;
+
+  --neon:#00d4ff; --neon2:rgba(0,212,255,.18);
+  --gold:#e8a020; --gold2:#f5c44a;
+  --glass:rgba(5,12,24,.88); --glass2:rgba(4,8,15,.97);
+  --b0:rgba(255,255,255,.05); --b1:rgba(255,255,255,.10); --b2:rgba(255,255,255,.18);
+  --warm:#eae4db; --soft:#6a82a0; --soft2:#9ab0c8;
+  --tr:.38s cubic-bezier(.16,1,.3,1); --tf:.2s ease;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  color:var(--warm);-webkit-font-smoothing:antialiased;}
+
+/* ═══════════════════════════════════════════
+   CANVAS
+═══════════════════════════════════════════ */
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;
+  touch-action:none;cursor:grab;}
+#c.pt{cursor:pointer;}
+
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY SCALE (global)
+   Ideal for presentation at distance (feira científica)
+═══════════════════════════════════════════ */
+html{font-size:112%;}
+body{font-size:clamp(16px,2.2vw,20px);}
+strong,b{font-weight:900;}
+
+/* Improve readability on all overlay/labels */
+#top,.ni,.ab,#bc,#tip,#hints,.err-h,.err-p{letter-spacing:0.02em;}
+
+
+/* ═══════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════ */
+#ld{position:fixed;inset:0;z-index:500;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity 1s ease;padding:20px;}
+#ld.out{opacity:0;pointer-events:none;}
+.ld-rings{position:relative;width:60px;height:60px;margin-bottom:24px;}
+.ld-r1{position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(0,212,255,.1);border-top-color:var(--neon);
+  animation:spin 1s linear infinite;}
+.ld-r2{position:absolute;inset:9px;border-radius:50%;
+  border:1px solid rgba(232,160,32,.1);border-bottom-color:var(--gold);
+  animation:spin 1.5s linear infinite reverse;}
+.ld-core{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.ld-core::after{content:'';width:8px;height:8px;border-radius:50%;
+  background:var(--neon);box-shadow:0 0 12px var(--neon);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-title{font-size:clamp(34px,7.2vw,58px);font-weight:900;color:var(--warm);
+  letter-spacing:.06em;margin-bottom:10px;text-align:center;
+  text-transform:none;line-height:1.05;
+  text-shadow:0 0 10px rgba(0,212,255,.25),0 0 22px rgba(0,212,255,.18),0 0 32px rgba(232,160,32,.12);}
+@media(max-width:420px){.ld-title{margin-bottom:8px;}}
+.ld-title b{color:var(--gold);text-shadow:0 0 18px rgba(232,160,32,.28),0 0 34px rgba(232,160,32,.18);}
+.ld-title b{color:var(--gold);}
+.ld-sl{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--neon);opacity:.6;margin-bottom:4px;}
+.ld-sub{font-size:8px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--soft);margin-bottom:26px;}
+.ld-bar{width:160px;height:2px;background:rgba(255,255,255,.07);
+  border-radius:2px;overflow:hidden;}
+.ld-fill{height:100%;width:0;transition:width .28s ease;
+  background:linear-gradient(90deg,var(--neon),var(--gold));
+  box-shadow:0 0 8px var(--neon);}
+.ld-msg{font-size:9px;color:var(--soft);letter-spacing:.8px;
+  margin-top:10px;min-height:14px;opacity:.55;text-align:center;}
+
+/* ═══════════════════════════════════════════
+   ERROR
+═══════════════════════════════════════════ */
+#err{display:none;position:fixed;inset:0;z-index:600;background:var(--bg);
+  flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;}
+#err.show{display:flex;}
+.err-h{font-size:20px;font-weight:700;color:#e05c6e;margin-bottom:8px;}
+.err-p{font-size:11px;color:var(--soft);margin-bottom:12px;}
+.err-pre{font:10px/1.6 monospace;color:var(--soft2);background:var(--b0);
+  border:1px solid var(--b1);border-radius:10px;padding:12px;
+  max-width:min(500px,90vw);text-align:left;white-space:pre-wrap;
+  word-break:break-all;max-height:160px;overflow-y:auto;}
+.err-btn{margin-top:14px;padding:10px 24px;background:var(--neon);
+  color:#000;border:none;border-radius:10px;font-weight:700;font-size:13px;
+  cursor:pointer;letter-spacing:.5px;}
+
+/* ═══════════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════════ */
+#top{position:fixed;top:0;left:0;right:0;z-index:60;pointer-events:none;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--safe-top) + 10px) 16px 8px;
+  background:linear-gradient(to bottom,rgba(4,8,15,.99) 65%,transparent);}
+.tb-l .eye{font-size:clamp(12px,1.8vw,16px);letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--neon);opacity:.75;margin-bottom:2px;font-weight:700;}
+.tb-l .name{font-size:clamp(18px,3.2vw,26px);font-weight:900;color:var(--warm);line-height:1.05;}
+.tb-l .name b{color:var(--gold);}
+.tb-l .sl{font-size:clamp(13px,2.2vw,17px);color:var(--neon);opacity:.7;letter-spacing:.08em;font-style:italic;font-weight:700;}
+.dev-pill{display:flex;align-items:center;gap:7px;pointer-events:none;
+  background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.25);
+  border-radius:100px;padding:7px 12px;font-size:clamp(12px,2.2vw,16px);
+  letter-spacing:.06em;color:var(--neon);white-space:nowrap;font-weight:800;}
+.dp-dot{width:7px;height:7px;border-radius:50%;background:var(--neon);
+  box-shadow:0 0 10px var(--neon);animation:pd 2s infinite;}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.2}}
+
+
+/* ═══════════════════════════════════════════
+   BOTTOM NAV
+═══════════════════════════════════════════ */
+#nav{position:fixed;bottom:0;left:0;right:0;z-index:60;
+  display:flex;align-items:stretch;
+  background:rgba(4,8,15,.98);border-top:1px solid rgba(0,212,255,.1);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  padding-bottom:var(--safe-bot);}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;padding:10px 2px 8px;
+  cursor:pointer;border:none;background:transparent;
+  color:var(--soft);font-size:clamp(11px,1.8vw,14px);font-weight:800;
+  transition:color var(--tf);letter-spacing:.03em;
+  min-height:56px;position:relative;}
+.ni.on{color:var(--neon);}
+.ni.on::after{content:'';position:absolute;bottom:0;left:18%;right:18%;
+  height:2px;background:var(--neon);box-shadow:0 0 12px rgba(0,212,255,.35);}
+.ni-ico{font-size:clamp(18px,4.2vw,22px);line-height:1;}
+
+
+/* ═══════════════════════════════════════════
+   AREA BADGES (left side, mobile optimised)
+═══════════════════════════════════════════ */
+#badges{position:fixed;left:8px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:4px;z-index:55;
+  transition:opacity var(--tr),transform var(--tr);}
+#badges.hide{opacity:0;pointer-events:none;transform:translateY(-50%) translateX(-20px);}
+.ab{display:flex;align-items:center;gap:6px;
+  background:var(--glass);border:1px solid var(--b0);
+  border-radius:8px;padding:6px 9px 6px 7px;
+  min-height:36px;cursor:pointer;
+  transition:all var(--tf);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+.ab::before{content:'';position:absolute;left:0;top:0;bottom:0;
+  width:2px;border-radius:2px 0 0 2px;
+  background:var(--ac,var(--neon));opacity:0;transition:opacity var(--tf);}
+.ab{position:relative;overflow:hidden;}
+.ab.on{border-color:rgba(0,212,255,.25);background:rgba(0,212,255,.04);}
+.ab.on::before{opacity:1;}
+.ab:active{transform:scale(.97);}
+.ab-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ab-txt{font-size:9px;font-weight:600;color:var(--warm);
+  line-height:1.2;max-width:100px;}
+@media(max-width:380px){.ab-txt{font-size:8.5px;max-width:88px;}
+  .ab{padding:5px 7px 5px 6px;}}
+
+/* ═══════════════════════════════════════════
+   TOUCH RIPPLE
+═══════════════════════════════════════════ */
+.ripple{position:fixed;border-radius:50%;pointer-events:none;z-index:300;
+  background:radial-gradient(circle,rgba(0,212,255,.3) 0%,transparent 70%);
+  animation:rip .5s ease-out forwards;}
+@keyframes rip{from{opacity:1;transform:scale(0)}to{opacity:0;transform:scale(1)}}
+
+/* ═══════════════════════════════════════════
+   TOOLTIP (mobile: shown briefly)
+═══════════════════════════════════════════ */
+#tip{position:fixed;pointer-events:none;z-index:200;
+  background:var(--glass2);border:1px solid rgba(0,212,255,.3);
+  border-radius:8px;padding:6px 12px 6px 9px;
+  font-size:11px;color:var(--warm);backdrop-filter:blur(12px);
+  opacity:0;transform:translateY(6px);
+  transition:opacity .15s,transform .15s;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+  box-shadow:0 0 16px rgba(0,212,255,.1);}
+#tip.on{opacity:1;transform:translateY(0);}
+.tip-d{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* ═══════════════════════════════════════════
+   VIGNETTE
+═══════════════════════════════════════════ */
+#vign{position:fixed;inset:0;z-index:49;pointer-events:none;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,transparent 50%,rgba(4,8,15,.8) 100%);
+  opacity:0;transition:opacity .5s;}
+#vign.on{opacity:1;}
+
+/* ═══════════════════════════════════════════
+   HINTS
+═══════════════════════════════════════════ */
+#hints{position:fixed;bottom:calc(var(--safe-bot) + 58px);left:50%;transform:translateX(-50%);
+  display:flex;gap:6px;z-index:55;transition:opacity .5s;white-space:nowrap;}
+#hints.gone{opacity:0;pointer-events:none;}
+.hc{background:var(--glass);border:1px solid var(--b0);
+  border-radius:100px;padding:5px 10px;font-size:8.5px;
+  color:var(--soft);backdrop-filter:blur(8px);}
+
+/* ═══════════════════════════════════════════
+   SIDE PANEL (full-width on mobile)
+═══════════════════════════════════════════ */
+#panel{position:fixed;bottom:0;left:0;right:0;top:auto;
+  height:78vh;max-height:78vh;z-index:80;
+  background:var(--glass2);border-top:1px solid rgba(0,212,255,.15);
+  border-radius:20px 20px 0 0;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateY(100%);transition:transform var(--tr);}
+#panel.on{transform:translateY(0);}
+/* drag handle */
+#panel::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:36px;height:3px;border-radius:3px;background:var(--b2);}
+/* neon top line */
+#panel::after{content:'';position:absolute;top:0;left:10%;right:10%;
+  height:1px;background:linear-gradient(90deg,transparent,var(--neon),transparent);opacity:.35;}
+
+/* Panel drag handle area */
+#ph-drag{height:28px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+#ph{flex-shrink:0;padding:0 16px 12px;border-bottom:1px solid var(--b0);}
+#ph-row{display:flex;align-items:flex-start;gap:10px;}
+#p-ico{width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  border:1px solid var(--b1);}
+#p-meta{flex:1;min-width:0;}
+#p-tag{font-size:clamp(11px,1.6vw,13px);letter-spacing:0.18em;text-transform:uppercase;font-weight:900;margin-bottom:6px;}
+#p-title{font-size:clamp(18px,3.2vw,26px);font-weight:950;color:var(--warm);line-height:1.1;margin-right:32px;}
+#px{position:absolute;top:34px;right:14px;
+  width:34px;height:34px;border-radius:50%;
+  background:var(--b0);border:1px solid var(--b1);
+  cursor:pointer;color:var(--soft);font-size:16px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+  transition:all var(--tf);}
+#px:active{background:var(--b1);color:var(--warm);}
+
+
+/* Panel tabs - scrollable */
+#ptabs{flex-shrink:0;display:flex;overflow-x:auto;
+  border-bottom:1px solid var(--b0);scrollbar-width:none;-ms-overflow-style:none;}
+#ptabs::-webkit-scrollbar{display:none;}
+.pt{flex-shrink:0;padding:8px 12px;font-size:9.5px;font-weight:500;
+  color:var(--soft);cursor:pointer;border:none;background:transparent;
+  border-bottom:2px solid transparent;
+  transition:color var(--tf),border-color var(--tf);white-space:nowrap;}
+.pt.on{color:var(--warm);border-bottom-color:var(--pc,var(--neon));}
+
+/* Panel body */
+#pb{flex:1;overflow-y:auto;padding:14px 16px 24px;
+  -webkit-overflow-scrolling:touch;}
+#pb::-webkit-scrollbar{width:2px;}
+#pb::-webkit-scrollbar-thumb{background:var(--neon2);border-radius:2px;}
+.tp{display:none;animation:fu .2s ease;}
+.tp.on{display:block;}
+@keyframes fu{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Panel content */
+.pdesc{font-size:clamp(14px,1.9vw,17px);line-height:1.7;color:rgba(234,228,219,.70);
+  border-left:3px solid var(--pc,var(--neon));padding-left:12px;margin-bottom:16px;}
+.psec{font-size:clamp(11px,1.5vw,14px);letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--soft);opacity:.65;margin:16px 0 10px;font-weight:850;}
+.psec:first-child{margin-top:0;}
+.pcard{background:var(--b0);border:1px solid var(--b0);
+  border-radius:10px;padding:12px 14px;margin-bottom:9px;}
+.pcard:active{border-color:var(--b1);}
+.pch{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.pci{font-size:clamp(18px,3.4vw,22px);flex-shrink:0;}
+.pcn{font-size:clamp(14px,2.2vw,17px);font-weight:900;color:var(--warm);line-height:1.15;}
+.pcd{font-size:clamp(13px,1.9vw,16px);line-height:1.55;color:rgba(234,228,219,.54);}
+.ptags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.ptag{padding:5px 12px;border-radius:100px;font-size:clamp(12px,1.6vw,14px);font-weight:750;border:1px solid;}
+.pben{display:flex;align-items:flex-start;gap:11px;padding:12px 0;
+  border-bottom:1px solid var(--b0);}
+.pben:last-child{border-bottom:none;}
+.pbdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+.pbt{font-size:clamp(14px,2.2vw,16px);font-weight:900;color:var(--warm);margin-bottom:4px;}
+.pbd{font-size:clamp(13px,1.9vw,16px);line-height:1.55;color:rgba(234,228,219,.54);}
+.pqt{background:rgba(0,212,255,.04);border-left:3px solid var(--pc,var(--neon));
+  border-radius:0 10px 10px 0;padding:12px 14px;margin:10px 0;
+  font-size:clamp(13px,1.9vw,16px);line-height:1.7;color:rgba(234,228,219,.62);font-style:italic;}
+.pstep{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--b0);}
+.pstep:last-child{border-bottom:none;}
+.psn{width:26px;height:26px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(12px,1.6vw,14px);font-weight:900;
+  background:rgba(0,212,255,.08);color:var(--neon);}
+.pst{font-size:clamp(14px,2.2vw,16px);font-weight:900;color:var(--warm);margin-bottom:4px;}
+.psd{font-size:clamp(13px,1.9vw,16px);line-height:1.55;color:rgba(234,228,219,.54);}
+
+
+/* ═══════════════════════════════════════════
+   FULL-SCREEN OVERLAYS
+═══════════════════════════════════════════ */
+.fso{position:fixed;inset:0;z-index:70;
+  background:var(--glass2);backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+  display:flex;flex-direction:column;
+  transform:translateY(105%);transition:transform var(--tr);}
+.fso.on{transform:translateY(0);}
+.fso::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--neon),transparent);opacity:.25;}
+
+.fh{flex-shrink:0;display:flex;align-items:center;gap:10px;
+  padding:calc(var(--safe-top) + 12px) 16px 12px;
+  border-bottom:1px solid var(--b0);}
+.fbk{min-width:34px;height:34px;border-radius:50%;
+  background:var(--b0);border:1px solid var(--b1);
+  cursor:pointer;color:var(--soft);font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all var(--tf);flex-shrink:0;}
+.fbk:active{background:var(--b1);color:var(--warm);}
+.fhtxt .feye{font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--neon);margin-bottom:2px;opacity:.7;}
+.fttl{font-size:18px;font-weight:700;color:var(--warm);}
+.fbody{flex:1;overflow-y:auto;padding:16px 16px calc(var(--safe-bot) + 70px);
+  -webkit-overflow-scrolling:touch;}
+
+/* Research tabs */
+#rtabs{display:flex;overflow-x:auto;flex-shrink:0;
+  border-bottom:1px solid var(--b0);scrollbar-width:none;}
+#rtabs::-webkit-scrollbar{display:none;}
+.rt{flex-shrink:0;padding:9px 13px;font-size:10px;font-weight:500;
+  color:var(--soft);cursor:pointer;border:none;background:transparent;
+  border-bottom:2px solid transparent;
+  transition:color var(--tf),border-color var(--tf);white-space:nowrap;}
+.rt.on{color:var(--neon);border-bottom-color:var(--neon);}
+.rtbody{flex:1;overflow-y:auto;padding:16px 16px calc(var(--safe-bot) + 70px);
+  -webkit-overflow-scrolling:touch;}
+#rpanes .rp{display:none;animation:fu .2s ease;}
+#rpanes .rp.on{display:block;}
+
+/* Areas grid */
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.acard{background:var(--b0);border:1px solid var(--b0);
+  border-radius:12px;padding:14px;cursor:pointer;
+  transition:all var(--tf);position:relative;overflow:hidden;}
+.acard:active{border-color:var(--b2);transform:scale(.98);}
+.acard::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--ac,var(--neon));border-radius:0 0 12px 12px;}
+.ac-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.ac-ico{font-size:20px;}
+.ac-name{font-size:12px;font-weight:700;color:var(--warm);}
+.ac-desc{font-size:10px;line-height:1.5;color:var(--soft);}
+
+/* Resources */
+.ri{display:flex;align-items:flex-start;gap:10px;padding:12px 0;
+  border-bottom:1px solid var(--b0);}
+.ri:last-child{border-bottom:none;}
+.ri-ico{font-size:20px;flex-shrink:0;margin-top:1px;}
+.ri-name{font-size:12.5px;font-weight:600;color:var(--warm);margin-bottom:2px;}
+.ri-desc{font-size:11px;line-height:1.5;color:var(--soft);}
+
+/* Pres + config */
+.prescard{background:var(--b0);border:1px solid var(--b0);
+  border-radius:10px;padding:13px;margin-bottom:8px;}
+.prescard-t{font-size:12.5px;font-weight:600;color:var(--warm);
+  display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.prescard-d{font-size:11px;line-height:1.65;color:rgba(234,228,219,.52);}
+.cfgrow{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 0;border-bottom:1px solid var(--b0);}
+.cfgrow:last-child{border-bottom:none;}
+.cfglbl{font-size:13px;color:var(--warm);}
+.cfgsub{font-size:10.5px;color:var(--soft);margin-top:1px;}
+.tog{width:38px;height:21px;border-radius:11px;background:rgba(255,255,255,.1);
+  border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.tog.on{background:var(--neon);}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:15px;height:15px;
+  border-radius:50%;background:#fff;transition:transform .2s;}
+.tog.on::after{transform:translateX(17px);}
+
+/* ═══════════════════════════════════════════
+   BREADCRUMB
+═══════════════════════════════════════════ */
+#bc{position:fixed;top:calc(var(--safe-top) + 58px);left:50%;transform:translateX(-50%);
+  z-index:55;display:flex;align-items:center;gap:5px;
+  background:var(--glass);border:1px solid var(--neon2);
+  border-radius:100px;padding:5px 13px;font-size:9px;
+  color:var(--soft);backdrop-filter:blur(12px);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+  white-space:nowrap;max-width:calc(100vw - 40px);}
+#bc.on{opacity:1;pointer-events:auto;}
+.bcl{cursor:pointer;transition:color var(--tf);}
+.bcl:active{color:var(--warm);}
+.bcc{color:var(--neon);font-weight:600;}
+.bcs{opacity:.3;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOADING ═══════════ -->
+<div id="ld">
+  <div class="ld-rings">
+    <div class="ld-r1"></div>
+    <div class="ld-r2"></div>
+    <div class="ld-core"></div>
+  </div>
+  <div class="ld-title">Sistema <b>SensIncluir</b>®</div>
+  <div class="ld-sl">Aprender sem barreiras</div>
+  <div class="ld-sub">Tecnologia Inclusiva Educacional</div>
+  <div class="ld-bar"><div class="ld-fill" id="lf"></div></div>
+  <div class="ld-msg" id="ldm">Preparando cena 3D…</div>
+</div>
+
+<!-- ═══════════ ERROR ═══════════ -->
+<div id="err">
+  <div class="err-h">Erro ao carregar</div>
+  <div class="err-p">Verifique sua conexão e tente novamente.</div>
+  <pre class="err-pre" id="errtxt"></pre>
+  <button class="err-btn" onclick="location.reload()">↺ Recarregar</button>
+</div>
+
+<!-- ═══════════ CANVAS ═══════════ -->
+<canvas id="c"></canvas>
+<div id="vign"></div>
+
+<!-- ═══════════ TOP BAR ═══════════ -->
+<div id="top">
+  <div class="tb-l">
+    <div class="eye">Tecnologia Inclusiva Educacional</div>
+    <div class="name">Sistema <b>SensIncluir</b>®</div>
+    <div class="sl">Aprender sem barreiras</div>
+  </div>
+  <div class="dev-pill"><span class="dp-dot"></span>Em Desenvolvimento</div>
+</div>
+
+<!-- ═══════════ BREADCRUMB ═══════════ -->
+<div id="bc">
+  <span class="bcl" onclick="goHome()">🏠 Início</span>
+  <span class="bcs" id="bc2s" style="display:none">›</span>
+  <span id="bc2t" class="bcc" style="display:none"></span>
+</div>
+
+<!-- ═══════════ AREA BADGES ═══════════ -->
+<div id="badges">
+  <div class="ab" data-a="sensorial" style="--ac:#e8824a"><span class="ab-dot" style="background:#e8824a"></span><span class="ab-txt">Área Sensorial</span></div>
+  <div class="ab" data-a="braille"   style="--ac:#8b6fc4"><span class="ab-dot" style="background:#8b6fc4"></span><span class="ab-txt">Braille</span></div>
+  <div class="ab" data-a="aac"       style="--ac:#e05c6e"><span class="ab-dot" style="background:#e05c6e"></span><span class="ab-txt">Comunicação AAC</span></div>
+  <div class="ab" data-a="rotina"    style="--ac:#4caf82"><span class="ab-dot" style="background:#4caf82"></span><span class="ab-txt">Rotina Visual</span></div>
+  <div class="ab" data-a="aprend"    style="--ac:#f0a500"><span class="ab-dot" style="background:#f0a500"></span><span class="ab-txt">Aprendizagem</span></div>
+  <div class="ab" data-a="motor"     style="--ac:#4a9edd"><span class="ab-dot" style="background:#4a9edd"></span><span class="ab-txt">Coord. Motora</span></div>
+</div>
+
+<!-- ═══════════ TOOLTIP ═══════════ -->
+<div id="tip"><span class="tip-d" id="tipdot"></span><span id="tiptext"></span></div>
+
+<!-- ═══════════ HINTS ═══════════ -->
+<div id="hints">
+  <div class="hc">👆 Toque · explorar</div>
+  <div class="hc">🔄 Arraste · girar</div>
+  <div class="hc">🔍 Pinça · zoom</div>
+</div>
+
+<!-- ═══════════ SIDE PANEL ═══════════ -->
+<div id="panel">
+  <div id="ph-drag" onclick="closePanel()"></div>
+  <div id="ph">
+    <div id="ph-row">
+      <div id="p-ico">🧩</div>
+      <div id="p-meta">
+        <div id="p-tag">Área</div>
+        <div id="p-title">–</div>
+      </div>
+      <button id="px" onclick="closePanel()">✕</button>
+    </div>
+  </div>
+  <div id="ptabs">
+    <button class="pt on" onclick="setTab(0)">📖 Geral</button>
+    <button class="pt" onclick="setTab(1)">🎯 Pedagógico</button>
+    <button class="pt" onclick="setTab(2)">🧪 Científico</button>
+    <button class="pt" onclick="setTab(3)">📈 Benefícios</button>
+    <button class="pt" onclick="setTab(4)">🏫 Aplicação</button>
+  </div>
+  <div id="pb">
+    <div class="tp on" id="t0"></div>
+    <div class="tp" id="t1"></div>
+    <div class="tp" id="t2"></div>
+    <div class="tp" id="t3"></div>
+    <div class="tp" id="t4"></div>
+  </div>
+</div>
+
+<!-- ═══════════ OVERLAYS ═══════════ -->
+<div class="fso" id="fo-areas">
+  <div class="fh"><button class="fbk" onclick="closeOv('fo-areas')">←</button>
+    <div class="fhtxt"><div class="feye">Navegação</div><div class="fttl">Áreas do SensIncluir®</div></div></div>
+  <div class="fbody" id="fo-areas-b"></div>
+</div>
+<div class="fso" id="fo-research">
+  <div class="fh"><button class="fbk" onclick="closeOv('fo-research')">←</button>
+    <div class="fhtxt"><div class="feye">Investigação</div><div class="fttl">Pesquisa Científica</div></div></div>
+  <div id="rtabs"></div>
+  <div id="rpanes" class="rtbody"></div>
+</div>
+<div class="fso" id="fo-resources">
+  <div class="fh"><button class="fbk" onclick="closeOv('fo-resources')">←</button>
+    <div class="fhtxt"><div class="feye">Caixa Pedagógica</div><div class="fttl">Materiais &amp; Recursos</div></div></div>
+  <div class="fbody" id="fo-res-b"></div>
+</div>
+<div class="fso" id="fo-pres">
+  <div class="fh"><button class="fbk" onclick="closeOv('fo-pres')">←</button>
+    <div class="fhtxt"><div class="feye">Apresentação</div><div class="fttl">Sobre o Projeto</div></div></div>
+  <div class="fbody" id="fo-pres-b"></div>
+</div>
+<div class="fso" id="fo-cfg">
+  <div class="fh"><button class="fbk" onclick="closeOv('fo-cfg')">←</button>
+    <div class="fhtxt"><div class="feye">Preferências</div><div class="fttl">Configurações</div></div></div>
+  <div class="fbody" id="fo-cfg-b"></div>
+</div>
+
+<!-- ═══════════ BOTTOM NAV ═══════════ -->
+<nav id="nav">
+  <button class="ni on" data-n="home"      onclick="navTo('home')"><span class="ni-ico">🏠</span>Início</button>
+  <button class="ni"    data-n="areas"     onclick="navTo('areas')"><span class="ni-ico">🧩</span>Áreas</button>
+  <button class="ni"    data-n="resources" onclick="navTo('resources')"><span class="ni-ico">📚</span>Recursos</button>
+  <button class="ni"    data-n="research"  onclick="navTo('research')"><span class="ni-ico">📊</span>Pesquisa</button>
+  <button class="ni"    data-n="pres"      onclick="navTo('pres')"><span class="ni-ico">🎓</span>Projeto</button>
+  <button class="ni"    data-n="cfg"       onclick="navTo('cfg')"><span class="ni-ico">⚙</span>Config</button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════
+   ERROR HANDLER
+═══════════════════════════════════════════ */
+window.onerror=function(m,s,l,c,e){
+  document.getElementById('ld').classList.add('out');
+  document.getElementById('err').classList.add('show');
+  document.getElementById('errtxt').textContent='Linha '+l+': '+m+(e?'\n'+e.stack:'');
+  return true;
+};
+
+try{
+/* ═══════════════════════════════════════════
+   1. AREA DATA
+═══════════════════════════════════════════ */
+var D={
+  sensorial:{icon:'🖐',label:'Área Sensorial',color:'#e8824a',hex:0xe8824a,
+    cam:{t:.64,p:.92,r:4.6},
+    overview:'Espaço dedicado à estimulação e regulação sensorial por meio de materiais com diferentes texturas, formas e resistências, promovendo integração neurológica e autorregulação em crianças com NEE.',
+    items:[
+      {icon:'⚽',name:'Bolas Sensoriais',desc:'4 bolas em silicone com densidades e texturas distintas para estimulação proprioceptiva'},
+      {icon:'🎴',name:'Cartões Táteis',desc:'6 cartões: liso, áspero, macio, rugoso, emborrachado e felpudo'},
+      {icon:'🔷',name:'Cubos Táteis',desc:'Cubos multiface com diferentes materiais para discriminação tátil ativa'},
+      {icon:'🧶',name:'Tecidos Sensoriais',desc:'Veludo, juta, algodão e neoprene para exploração das mãos'},
+    ],
+    nee:['TEA','Transtorno Sensorial','TDAH','Def. Intelectual'],
+    pedagogy:'A estimulação sensorial organizada reduz a reatividade excessiva do sistema nervoso, melhorando a autorregulação e a capacidade de concentração. Materiais com variação textural ativam o córtex somatossensorial e criam mapas neurais de experiências táteis essenciais para crianças que evitam ou buscam excessivamente estímulos físicos.',
+    science:'Embasada na Teoria da Integração Sensorial (Ayres, 1972) e no Modelo DIR/Floortime (Greenspan), a área responde ao fato de que 60–80% das crianças com TEA apresentam disfunção no processamento sensorial, impactando diretamente o aprendizado escolar.',
+    benefits:[{t:'Autorregulação',d:'Reduz ansiedade e hiperatividade durante atividades acadêmicas'},{t:'Foco e Atenção',d:'Melhora a capacidade de manter atenção por períodos maiores'},{t:'Coordenação Motora',d:'Aprimora o esquema corporal e a consciência espacial'},{t:'Bem-Estar Emocional',d:'Reduz crises sensoriais e comportamentos disruptivos em sala'}],
+    application:[{t:'Antes das aulas',d:'Cartões táteis por 5 min para regulação sensorial inicial'},{t:'Transições',d:'Bolinha de textura como objeto de transição entre atividades'},{t:'Pausas sensoriais',d:'Estação disponível ao longo do dia conforme necessidade'},{t:'Grupo inclusivo',d:'Identificação tátil com olhos vendados para toda a turma'}]},
+  braille:{icon:'⠃',label:'Alfabetização Braille',color:'#8b6fc4',hex:0x8b6fc4,
+    cam:{t:.70,p:.90,r:4.6},
+    overview:'Conjunto de materiais para introdução e desenvolvimento da leitura e escrita em Braille, integrando métodos visuais e táteis para uma alfabetização verdadeiramente inclusiva.',
+    items:[
+      {icon:'⠿',name:'Placa Braille',desc:'Alfabeto completo grau I com celas em relevo de 3mm em PVC resistente'},
+      {icon:'📖',name:'Mini Livro Braille',desc:'Livro com texto em tinta e Braille em todas as páginas, aberto para leitura'},
+      {icon:'🔠',name:'Letras em Relevo',desc:'26 letras em EVA com perfil elevado e alto contraste visual'},
+      {icon:'📐',name:'Reglete Didático',desc:'8 células com punção para prática da escrita Braille'},
+    ],
+    nee:['Deficiência Visual','Baixa Visão','Cegueira Congênita'],
+    pedagogy:'A abordagem simultânea tinta-Braille respeita o Decreto 7.611/2011. O método fônico associado ao tato constrói consciência fonológica sem depender da visão, garantindo acesso igualitário à alfabetização.',
+    science:'A neurofisiologia do Braille demonstra que a leitura tátil ativa o córtex visual de pessoas cegas via neuroplasticidade (Sadato et al., 1996). O SensIncluir® integra esta evidência com o método fônico da BNCC (2018).',
+    benefits:[{t:'Acesso à Leitura',d:'Garante pleno acesso ao currículo independente da acuidade visual'},{t:'Autonomia Escrita',d:'Habilidade de produzir textos de forma autônoma'},{t:'Inclusão Social',d:'Elimina barreiras de comunicação com colegas e professores'},{t:'Autoestima',d:'Competência de leitura fortalece identidade e confiança'}],
+    application:[{t:'Identificação inicial',d:'Cartões tinta-Braille para relacionar letras impressas ao sistema'},{t:'Prática da escrita',d:'Inicie com palavras curtas no reglete usando punção'},{t:'Leitura compartilhada',d:'Mini livro para leitura com toda a turma'},{t:'Tecnologia assistiva',d:'Integre com DOSVOX e NVDA para aprendizado digital'}]},
+  aac:{icon:'💬',label:'Comunicação AAC',color:'#e05c6e',hex:0xe05c6e,
+    cam:{t:-.54,p:.88,r:4.6},
+    overview:'Sistema de Comunicação Alternativa e Aumentativa com pranchas, pictogramas e cartões de emoções para garantir que todos os estudantes possam se expressar, independente da capacidade verbal.',
+    items:[
+      {icon:'🖼',name:'Prancha AAC',desc:'Grade 4×4 com pictogramas ARASAAC para necessidades básicas, emoções e atividades'},
+      {icon:'😊',name:'Cartões de Emoções',desc:'20 cartões com expressões faciais ilustradas para comunicação emocional'},
+      {icon:'📋',name:'Sequência de Rotina',desc:'8 cartões representando as etapas do dia escolar'},
+      {icon:'🔤',name:'Cartões Temáticos',desc:'Família, escola, alimentos, atividades e desejos'},
+    ],
+    nee:['TEA','Mutismo Seletivo','Paralisia Cerebral','Apraxia de Fala'],
+    pedagogy:'A AAC não substitui a fala — a complementa e pode estimulá-la. Pesquisas mostram que sistemas AAC não inibem o desenvolvimento verbal e, em muitos casos, o potencializam. Os pictogramas ARASAAC são reconhecidos pela ISAAC internacionalmente.',
+    science:'Fundamentada nas diretrizes da ASHA e no modelo LAMP (Language Acquisition through Motor Planning), a área responde à necessidade de 1,2% das crianças brasileiras com dificuldades significativas de comunicação oral.',
+    benefits:[{t:'Expressão',d:'Toda criança pode comunicar necessidades, desejos e sentimentos'},{t:'Participação',d:'Inclusão real em atividades de grupo e discussões coletivas'},{t:'Redução de Frustração',d:'Menos crises originadas da incapacidade de comunicar'},{t:'Desenvolvimento Verbal',d:'Suporte à aquisição e expansão da linguagem oral'}],
+    application:[{t:'Rotina matinal',d:'Sequência de rotina para antecipar o que acontecerá no dia'},{t:'Círculo de conversa',d:'Cartões de emoções para todos expressarem como estão'},{t:'Autonomia',d:'Cartões para o estudante fazer escolhas ao longo do dia'},{t:'Família',d:'Pranchas adaptadas para casa para continuidade do trabalho'}]},
+  rotina:{icon:'📅',label:'Rotina Visual',color:'#4caf82',hex:0x4caf82,
+    cam:{t:.08,p:.74,r:5.0},
+    overview:'Recursos visuais para estruturação da rotina escolar, promovendo previsibilidade, redução de ansiedade e desenvolvimento gradual da autonomia nas atividades diárias.',
+    items:[
+      {icon:'📅',name:'Calendário Visual',desc:'Calendário mensal com marcadores, pictogramas e código de cores'},
+      {icon:'🕐',name:'Relógio Pedagógico',desc:'Relógio analógico grande com ponteiros coloridos e demarcações do dia'},
+      {icon:'⏳',name:'Ampulhetas Visuais',desc:'Três ampulhetas de 3, 5 e 10 minutos para visualização do tempo'},
+      {icon:'📌',name:'Cards de Sequência',desc:'12 cartões com todas as atividades do dia escolar ilustradas'},
+    ],
+    nee:['TEA','TDAH','Ansiedade','Def. Intelectual','Síndrome de Down'],
+    pedagogy:'A previsibilidade estrutural é um dos pilares do suporte a estudantes com TEA e TDAH. Rotinas visuais reduzem a carga cognitiva relacionada à antecipação de eventos, liberando recursos atencionais para o aprendizado.',
+    science:'O modelo TEACCH (Schopler, 1972) fundamenta o uso de estrutura visual como suporte primário. Estudos de Hume & Odom (2007) mostraram melhora de 35% na independência de estudantes com TEA ao utilizarem rotinas visuais.',
+    benefits:[{t:'Previsibilidade',d:'Reduz ansiedade antecipando a estrutura do dia de forma concreta'},{t:'Independência',d:'Estudante consulta a rotina e realiza transições sem auxílio'},{t:'Gestão do Tempo',d:'Desenvolvimento de noção temporal concreta e funcional'},{t:'Autoeficácia',d:'Percepção de competência ao prever e executar a rotina'}],
+    application:[{t:'Início do dia',d:'Monte a sequência junto com o estudante todas as manhãs'},{t:'Transições',d:'Vire o cartão da atividade concluída e aponte o próximo'},{t:'Gestão do tempo',d:'Use a ampulheta para delimitar períodos de atividade'},{t:'Personalização',d:'Substitua pictogramas por fotos reais da escola'}]},
+  aprend:{icon:'📚',label:'Aprendizagem Adaptada',color:'#f0a500',hex:0xf0a500,
+    cam:{t:.08,p:.88,r:4.8},
+    overview:'Materiais manipuláveis para apoio à alfabetização e numeracia, baseados em aprendizagem concreta e multissensorial conforme a Teoria de Bruner e o Design Universal para Aprendizagem.',
+    items:[
+      {icon:'🔤',name:'Letras Móveis',desc:'Alfabeto completo maiúsculo e minúsculo, em 3 tamanhos e cores por categoria fonética'},
+      {icon:'🔢',name:'Números Coloridos',desc:'Algarismos 0–9 em EVA com relevo e ábaco de 5 colunas'},
+      {icon:'🧩',name:'Quebra-cabeça Educativo',desc:'4 quebra-cabeças com formas geométricas e encaixe por cor e forma'},
+      {icon:'🟦',name:'Blocos Pedagógicos',desc:'Blocos lógicos em 4 formas, 3 tamanhos e 4 cores para classificação'},
+    ],
+    nee:['Dislexia','Discalculia','TDAH','Def. Intelectual','TEA'],
+    pedagogy:'O currículo em espiral de Bruner propõe que conceitos complexos sejam introduzidos primeiro de forma concreta, depois pictórica e por fim simbólica. Os materiais seguem esta progressão, construindo o conceito antes da representação abstrata.',
+    science:'O Design Universal para Aprendizagem (CAST, 2018) orienta múltiplos meios de representação. Para estudantes com dislexia e discalculia, a manipulação concreta reduz a sobrecarga do processamento fonológico e visuoespacial.',
+    benefits:[{t:'Conceitos Concretos',d:'Matematiza e alfabetiza da experiência física para o símbolo'},{t:'Engajamento',d:'Materiais manipuláveis aumentam motivação e tempo de foco'},{t:'Múltiplas Representações',d:'Mesmo conteúdo em formatos variados para diferentes perfis'},{t:'Progressão Individual',d:'Permite ao estudante avançar no próprio ritmo'}],
+    application:[{t:'Formação de palavras',d:'Letras móveis para construir palavras antes de escrever'},{t:'Matemática concreta',d:'Ábaco para representar adição e subtração fisicamente'},{t:'Quebra-cabeça em grupo',d:'Atividade coletiva inclusiva para toda a turma'},{t:'Avaliação adaptada',d:'Permita uso dos materiais durante avaliações'}]},
+  motor:{icon:'🤝',label:'Coordenação Motora',color:'#4a9edd',hex:0x4a9edd,
+    cam:{t:-.67,p:.86,r:4.8},
+    overview:'Materiais estruturados para desenvolvimento da coordenação motora fina e grossa, essenciais para aquisição da escrita, autonomia nas atividades de vida diária e participação escolar plena.',
+    items:[
+      {icon:'🌀',name:'Mini Labirinto',desc:'Labirinto de trilhos com bolinha para coordenação bimanual e controle motor fino'},
+      {icon:'💍',name:'Argolas e Encaixes',desc:'Conjunto de argolas coloridas para encaixe em hastes de diferentes alturas'},
+      {icon:'✏️',name:'Kit de Preensão',desc:'Adaptadores de lápis, canetas triangulares e guias de escrita'},
+      {icon:'✂️',name:'Barras de Coord. Fina',desc:'Laçarotes, botões e zíperes para habilidades de vida diária'},
+    ],
+    nee:['Paralisia Cerebral','Dismotria','TEA','Síndrome de Down','Def. Física'],
+    pedagogy:'A motricidade fina é pré-requisito para a escrita e para a independência nas atividades escolares. A abordagem graduada — do encaixe simples à escrita — respeita a Zona de Desenvolvimento Proximal (Vygotsky).',
+    science:'A Estrutura de Prática de Participação (PEO, Law et al., 1996) orienta intervenções centradas nas ocupações escolares. Evidências de Smits-Engelsman et al. (2018) indicam que treinamento específico melhora significativamente a funcionalidade escolar.',
+    benefits:[{t:'Escrita Funcional',d:'Desenvolvimento da preensão e controle necessários para o lápis'},{t:'Autonomia',d:'Realização independente de tarefas como abotoar e cortar'},{t:'Participação',d:'Inclusão em atividades de artes, escrita e laboratório'},{t:'Autoconfiança',d:'Progressão visível nas habilidades motoras fortalece a autoestima'}],
+    application:[{t:'Aquecimento motor',d:'5 min de labirinto ou encaixe antes de atividades de escrita'},{t:'Atividades paralelas',d:'Argolas enquanto a turma faz atividade gráfica'},{t:'Recreio estruturado',d:'Laçarotes e botões em atividade lúdica no recreio'},{t:'Colaboração',d:'Compartilhe as atividades com o terapeuta ocupacional'}]}
+};
+
+/* ═══════════════════════════════════════════
+   2. RENDERER — MOBILE OPTIMISED
+═══════════════════════════════════════════ */
+if(typeof THREE==='undefined') throw new Error('Three.js CDN não carregou. Verifique a conexão.');
+
+var canvas=document.getElementById('c');
+/* mobile: cap pixel ratio at 2 for performance */
+var PR=Math.min(window.devicePixelRatio||1,2);
+var isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+
+var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:PR<2,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(PR);
+renderer.shadowMap.enabled=!isMobile; /* disable shadows on mobile for perf */
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.12;
+renderer.physicallyCorrectLights=true;
+
+var scene=new THREE.Scene();
+scene.background=new THREE.Color(0x04080f);
+scene.fog=new THREE.FogExp2(0x04080f,.018);
+
+var camera=new THREE.PerspectiveCamera(42,1,.05,100);
+camera.position.set(3.5,3.5,7.0);
+
+/* ═══════════════════════════════════════════
+   3. TOUCH + MOUSE ORBIT
+═══════════════════════════════════════════ */
+var drag=false,lx=0,ly=0,moved=false;
+var pinching=false,pinchD0=0,pinchR0=0;
+var sph={t:.48,p:.98,r:8.0},tsph={t:.48,p:.98,r:8.0};
+var lookT=new THREE.Vector3(0,.5,0),lookC=new THREE.Vector3(0,.5,0);
+
+function lerp(a,b,t){return a+(b-a)*t;}
+
+function onDown(x,y){drag=true;lx=x;ly=y;moved=false;}
+function onMove(x,y){
+  if(!drag||pinching)return;moved=true;
+  tsph.t-=(x-lx)*.007;
+  tsph.p=Math.max(.15,Math.min(Math.PI*.72,tsph.p+(y-ly)*.006));
+  lx=x;ly=y;
+}
+function onUp(){drag=false;}
+
+/* Mouse */
+canvas.addEventListener('mousedown',function(e){onDown(e.clientX,e.clientY);});
+window.addEventListener('mousemove',function(e){onMove(e.clientX,e.clientY);});
+window.addEventListener('mouseup',onUp);
+canvas.addEventListener('wheel',function(e){tsph.r=Math.max(2.5,Math.min(14,tsph.r+e.deltaY*.012));e.preventDefault();},{passive:false});
+
+/* Touch — single finger orbit, two finger pinch zoom */
+canvas.addEventListener('touchstart',function(e){
+  if(e.touches.length===1){onDown(e.touches[0].clientX,e.touches[0].clientY);}
+  else if(e.touches.length===2){
+    pinching=true;drag=false;
+    var dx=e.touches[0].clientX-e.touches[1].clientX;
+    var dy=e.touches[0].clientY-e.touches[1].clientY;
+    pinchD0=Math.sqrt(dx*dx+dy*dy);pinchR0=tsph.r;
+  }
+  e.preventDefault();
+},{passive:false});
+
+canvas.addEventListener('touchmove',function(e){
+  if(e.touches.length===1&&!pinching){
+    onMove(e.touches[0].clientX,e.touches[0].clientY);
+  } else if(e.touches.length===2&&pinching){
+    var dx=e.touches[0].clientX-e.touches[1].clientX;
+    var dy=e.touches[0].clientY-e.touches[1].clientY;
+    var d=Math.sqrt(dx*dx+dy*dy);
+    tsph.r=Math.max(2.5,Math.min(14,pinchR0*(pinchD0/d)));
+  }
+  e.preventDefault();
+},{passive:false});
+
+canvas.addEventListener('touchend',function(e){
+  if(e.touches.length===0){drag=false;pinching=false;}
+  if(e.touches.length===1&&pinching){
+    pinching=false;
+    onDown(e.touches[0].clientX,e.touches[0].clientY);
+  }
+});
+
+function updateCam(){
+  sph.t=lerp(sph.t,tsph.t,.1);sph.p=lerp(sph.p,tsph.p,.1);sph.r=lerp(sph.r,tsph.r,.1);
+  lookC.lerp(lookT,.08);
+  camera.position.set(
+    sph.r*Math.sin(sph.p)*Math.sin(sph.t),
+    sph.r*Math.cos(sph.p),
+    sph.r*Math.sin(sph.p)*Math.cos(sph.t)
+  );
+  camera.lookAt(lookC);
+}
+
+/* ═══════════════════════════════════════════
+   4. HELPERS
+═══════════════════════════════════════════ */
+function M(c,r,m,e,ei){
+  r=r===undefined?.5:r;m=m===undefined?0:m;
+  var o={color:c,roughness:r,metalness:m};
+  if(e!==undefined&&e!==null){o.emissive=new THREE.Color(e);o.emissiveIntensity=ei===undefined?0:ei;}
+  return new THREE.MeshStandardMaterial(o);
+}
+function BX(w,h,d,mat){var x=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);x.castShadow=true;x.receiveShadow=true;return x;}
+function CY(rt,rb,h,s,mat){var x=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,s),mat);x.castShadow=true;return x;}
+function SP(r,mat){var x=new THREE.Mesh(new THREE.SphereGeometry(r,12,9),mat);x.castShadow=true;return x;}
+function CN(r,h,s,mat){var x=new THREE.Mesh(new THREE.ConeGeometry(r,h,s),mat);x.castShadow=true;return x;}
+function TR(r,t,s,mat){var x=new THREE.Mesh(new THREE.TorusGeometry(r,t,7,s),mat);x.castShadow=true;return x;}
+function put(m,x,y,z,rx,ry,rz){m.position.set(x,y,z);if(rx!==undefined)m.rotation.set(rx,ry||0,rz||0);return m;}
+function GH(w,h,d){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({transparent:true,opacity:0}));}
+
+/* shared mats */
+var mOak=M(0x7a5530,.56,.02),mDark=M(0x3d2010,.72,.01),mLid=M(0x6b4a28,.48,.02);
+var mFelt=M(0x142814,.98),mGold=M(0xc8963e,.18,.88),mSilv=M(0xb0ada8,.16,.94);
+var mTeal=M(0x2ec4b6,.38,.12,0x1a7a70,.15),mCream=M(0xfff5e0,.58),mWhite=M(0xf5f2ec,.32);
+var mNeon=M(0x00d4ff,.10,.30,0x00d4ff,.80);
+var mScreen=M(0x040c1c,.06,.30,0x004488,.75);
+
+/* interactive registry */
+var interactives=[];
+function regI(mesh,key,lbl){mesh.userData={interactive:true,key:key,lbl:lbl};interactives.push(mesh);}
+
+/* ═══════════════════════════════════════════
+   5. SCENE BUILD
+═══════════════════════════════════════════ */
+
+/* TABLE */
+var tTop=BX(9,.10,5.2,M(0x1a2030,.22,.22));put(tTop,0,-.05,0);scene.add(tTop);
+var cloth=BX(9.1,.04,5.3,M(0x08121e,.98));put(cloth,0,-.12,0);scene.add(cloth);
+[[-4,-2],[-4,2],[4,-2],[4,2]].forEach(function(p){
+  var l=BX(.10,1.9,.10,M(0x101820,.3,.55));put(l,p[0],-1.02,p[1]);scene.add(l);
+  /* neon base ring */
+  var lr=TR(.06,.008,14,M(0x00d4ff,.1,.2,0x00d4ff,.35));lr.rotation.x=Math.PI/2;put(lr,p[0],-1.96,p[1]);scene.add(lr);
+});
+
+/* FLOOR */
+var floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),M(0x030710,.94,.06));
+floor.rotation.x=-Math.PI/2;floor.position.y=-2.08;floor.receiveShadow=true;scene.add(floor);
+var refl=new THREE.Mesh(new THREE.PlaneGeometry(14,9),new THREE.MeshStandardMaterial({color:0x0a1828,roughness:.04,metalness:.70,transparent:true,opacity:.12}));
+refl.rotation.x=-Math.PI/2;refl.position.set(0,-.012,0);scene.add(refl);
+
+/* BOX SHELL */
+var BW=3.9,BH=.82,BD=2.66;
+var boxG=new THREE.Group();boxG.position.set(-.18,.10,0);scene.add(boxG);
+
+[
+  {s:[BW,BH,.068],p:[0,0,-BD/2],m:mDark},{s:[BW,BH,.068],p:[0,0,BD/2],m:mDark},
+  {s:[.068,BH,BD],p:[-BW/2,0,0],m:mOak},{s:[.068,BH,BD],p:[BW/2,0,0],m:mOak},
+  {s:[BW,.068,BD],p:[0,-BH/2,0],m:mDark}
+].forEach(function(d){var b=BX(d.s[0],d.s[1],d.s[2],d.m);put(b,d.p[0],d.p[1],d.p[2]);boxG.add(b);});
+
+[[BW/2,BD/2],[BW/2,-BD/2],[-BW/2,BD/2],[-BW/2,-BD/2]].forEach(function(p){
+  var r=CY(.048,.048,BH,8,mGold);put(r,p[0],0,p[1]);boxG.add(r);
+});
+
+var felt=BX(BW-.16,.022,BD-.16,mFelt);put(felt,0,-BH/2+.044,0);boxG.add(felt);
+/* neon grid on felt */
+for(var fi=-1;fi<=1;fi++){
+  var fl=BX(BW-.18,.001,.006,M(0x00d4ff,.1,.1,0x00d4ff,.28));put(fl,0,-BH/2+.056,fi*.44);boxG.add(fl);
+  var fc=BX(.006,.001,BD-.18,M(0x00d4ff,.1,.1,0x00d4ff,.28));put(fc,fi*.64,-BH/2+.056,0);boxG.add(fc);
+}
+
+/* dividers */
+var dM=M(0x8b6b3d,.58);
+[{s:[.06,BH-.10,BD-.16],p:[-BW/2+1.26,-.01,0]},
+ {s:[.06,BH-.10,BD-.16],p:[.11,-.01,0]},
+ {s:[.06,BH-.10,BD-.16],p:[BW/2-1.16,-.01,0]}
+].forEach(function(d){var v=BX(d.s[0],d.s[1],d.s[2],dM);put(v,d.p[0],d.p[1],d.p[2]);boxG.add(v);});
+boxG.add(put(BX(1.14,.056,.056,dM),-BW/2+.61,.05,0));
+boxG.add(put(BX(1.04,.056,.056,dM),BW/2-.57,.05,0));
+
+/* LID */
+var lidPiv=new THREE.Group();lidPiv.position.set(0,BH/2,-BD/2+.034);boxG.add(lidPiv);
+var lid=BX(BW,.068,BD,mLid);put(lid,0,.034,-BD/2);lidPiv.add(lid);
+lidPiv.rotation.x=-Math.PI*.618;
+// Logo no lid (cria referência explicitamente para evitar remoções frágeis do scene)
+var logoP=BX(1.88,.030,.58,M(0xc8963e,.16,.88,0xaa7000,.30));
+put(logoP,0,.060,-.02);
+lid.add(logoP);
+var logoT=BX(1.80,.022,.11,M(0xffd060,.06,.92,0xcc9900,.52));put(logoT,0,.074,.08);lid.add(logoT);
+var logoN=BX(1.5,.004,.008,M(0x00d4ff,.1,.2,0x00d4ff,.9));put(logoN,0,.046,.28);lid.add(logoN);
+var lidL=BX(BW-.16,.013,BD-.16,mWhite);put(lidL,0,-.013,0);lid.add(lidL);
+var clasp=BX(.11,.055,.068,mGold);
+put(clasp,0,-BH/2+.038,BD/2-.033);
+boxG.add(clasp);
+[-.94,.94].forEach(function(x){var hg=BX(.078,.044,.068,mSilv);put(hg,x,BH/2+.012,-BD/2+.022);boxG.add(hg);});
+
+/* ═══════════════════════════════════════════
+   COMPARTMENTS
+═══════════════════════════════════════════ */
+var BY=-BH/2+.044,comps={};
+var SLIDE=.42;
+function mkComp(k,ox,oz){
+  var g=new THREE.Group();g.position.set(ox,BY,oz);boxG.add(g);
+  comps[k]={grp:g,ox:ox,oz:oz,tx:0,tz:0,open:false};return g;
+}
+
+/* SENSORIAL */
+(function(){
+  var g=mkComp('sensorial',-BW/2+.60,.28);
+  var tcols=[0xe8c4a0,0xd4a0e0,0xa0d4e0,0xe0d4a0,0xe0a0a0,0xa0e0c0];
+  tcols.forEach(function(c,i){var cd=BX(.20,.013,.28,M(c,.76));put(cd,(i%2-.5)*.22,i*.013,Math.floor(i/2)*.30-.28);g.add(cd);});
+  /* sensor balls */
+  [0xff6b6b,0x6b8bff,0xffdd6b,0x6bdd6b].forEach(function(c,i){
+    var b=SP(.065,M(c,.18,.06,c,.07));put(b,(i%2-.5)*.22,.065,Math.floor(i/2)*.24-.66);g.add(b);
+  });
+  /* tactile cubes */
+  [0xe84c4c,0x4a9edd].forEach(function(c,i){
+    var cb=BX(.11,.11,.11,M(c,.38,.04));put(cb,-0.12+i*.28,.055,.50);g.add(cb);
+    /* multiface strips */
+    [0,.055,-.055].forEach(function(dz){var fs=BX(.09,.01,.01,M(c*.6,.95));fs.position.set(-0.12+i*.28,.11,.50+dz);g.add(fs);});
+  });
+  /* fabric swatches */
+  [0x9b59b6,0x27ae60,0xe74c3c].forEach(function(c,i){var sw=BX(.13,.009,.18,M(c,.94));put(sw,-.14+i*.16,.004,.38);g.add(sw);});
+  /* area glow */
+  var agl=new THREE.PointLight(0xff8844,.0,1.4);agl.position.set(0,.4,0);g.add(agl);comps['sensorial'].light=agl;
+  var h=GH(1.10,.30,.96);put(h,0,.14,0);g.add(h);regI(h,'sensorial','Área Sensorial');
+})();
+
+/* BRAILLE */
+(function(){
+  var g=mkComp('braille',-BW/2+.60,-.78);
+  var plate=BX(.88,.017,.52,mCream);put(plate,0,.008,0);g.add(plate);
+  for(var r=0;r<3;r++) for(var c=0;c<6;c++){if(Math.random()>.35){var d=SP(.012,M(0x6b5530,.5));put(d,-.26+c*.08,.024,-.10+r*.10);g.add(d);}}
+  /* mini open book */
+  var bkL=BX(.22,.009,.28,M(0xf5f0e8,.5));put(bkL,-.13,.009,.26,0,-.12,0);g.add(bkL);
+  var bkR=BX(.22,.009,.28,M(0xf5f0e8,.5));put(bkR,.13,.009,.26,0,.12,0);g.add(bkR);
+  var bkSp=BX(.010,.013,.28,M(0x8b6b3d,.4));put(bkSp,0,.007,.26);g.add(bkSp);
+  for(var bb=0;bb<4;bb++){var bd=SP(.007,M(0x6b5530,.5));put(bd,-.18+bb*.06,.020,.16);g.add(bd);}
+  /* thermoform */
+  var tp=BX(.52,.011,.36,M(0xfff8f0,.5));put(tp,.20,.010,.14,0,.06,0);g.add(tp);
+  /* reglete */
+  var reg=BX(.70,.019,.056,M(0x607d8b,.32,.4));put(reg,0,.019,.34);g.add(reg);
+  for(var ci=0;ci<8;ci++){var cell=BX(.050,.010,.034,M(0x90a4ae,.28));put(cell,-.30+ci*.086,.025,.34);g.add(cell);}
+  /* letter blocks */
+  [0xc8963e,0x5c5c9a,0xc45c5c,0x2ec4b6].forEach(function(c,i){
+    var lb=BX(.13,.10,.022,M(c,.32,.10));put(lb,-.22+i*.18,.055,.26);g.add(lb);
+    var rg=BX(.09,.020,.009,M(0xffffff,.28));rg.position.set(lb.position.x,lb.position.y+.060,lb.position.z+.012);g.add(rg);
+  });
+  var agl=new THREE.PointLight(0xaa88ff,.0,1.3);agl.position.set(0,.4,0);g.add(agl);comps['braille'].light=agl;
+  var h=GH(1.02,.26,.68);put(h,0,.12,0);g.add(h);regI(h,'braille','Alfabetização Braille');
+})();
+
+/* AAC */
+(function(){
+  var g=mkComp('aac',BW/2-.58,.28);
+  var board=BX(.96,.019,.72,M(0xf0f8ff,.38));put(board,0,.009,0);g.add(board);
+  var brd=BX(1.0,.012,.76,M(0xe8e4f0,.50));put(brd,0,.006,0);g.add(brd);
+  var ccols=[0xffcccc,0xccffcc,0xccccff,0xffffcc,0xffccff,0xccffff];
+  var scols=[0xe05050,0x50c050,0x5050e0,0xe0c050,0xc050e0,0x50c0e0];
+  for(var r=0;r<2;r++) for(var c=0;c<3;c++){
+    var idx=r*3+c;
+    var cell=BX(.26,.013,.28,M(ccols[idx],.42));put(cell,-.30+c*.30,.015,-.18+r*.28);g.add(cell);
+    var sym=SP(.040,M(scols[idx],.28));put(sym,-.30+c*.30,.040,-.18+r*.28);g.add(sym);
+  }
+  /* emotion cards */
+  [0xe8c050,0xe05050,0x5090e0,0x50c050].forEach(function(c,i){
+    var ec=BX(.15,.015,.22,M(c,.42));put(ec,-.31+i*.22,.015,.40);g.add(ec);
+    var face=CY(.048,.048,.007,12,M(0x222222,.30));face.rotation.x=Math.PI/2;put(face,-.31+i*.22,.030,.40);g.add(face);
+    var eL=SP(.011,M(0x333333,.5));eL.position.set(-.31+i*.22-.016,.040,.392);g.add(eL);
+    var eR=SP(.011,M(0x333333,.5));eR.position.set(-.31+i*.22+.016,.040,.392);g.add(eR);
+  });
+  /* pictogram figures */
+  [0xe84c4c,0x4a9edd].forEach(function(c,i){
+    var fig=CY(.030,.038,.075,8,M(c,.30));put(fig,-.26+i*.54,.038,-.12);g.add(fig);
+    var head=SP(.038,M(c,.30));put(head,-.26+i*.54,.112,-.12);g.add(head);
+  });
+  var agl=new THREE.PointLight(0xff6688,.0,1.3);agl.position.set(0,.4,0);g.add(agl);comps['aac'].light=agl;
+  var h=GH(1.08,.28,.96);put(h,0,.14,0);g.add(h);regI(h,'aac','Comunicação AAC');
+})();
+
+/* ROTINA */
+(function(){
+  var g=mkComp('rotina',.10,.78);
+  var cal=BX(.52,.015,.36,mCream);put(cal,-.26,.007,0);g.add(cal);
+  var calH=BX(.52,.009,.058,mTeal);put(calH,-.26,.020,-.150);g.add(calH);
+  for(var gr=0;gr<4;gr++) for(var gc=0;gc<5;gc++){
+    var gcell=BX(.080,.003,.050,M(gr*5+gc<15?0xe8f4f0:0xffffff,.5));put(gcell,-.46+gc*.10,.019,-.10+gr*.058);g.add(gcell);
+  }
+  [0,1,2].forEach(function(i){var mk=BX(.028,.007,.028,M([0xe84c4c,0xf0a500,0x4caf82][i],.4,.1));put(mk,-.38+i*.10,.026,-.04);g.add(mk);});
+  var cf=CY(.096,.096,.013,22,mCream);cf.rotation.x=Math.PI/2;put(cf,.18,.007,.08);g.add(cf);
+  var cr=CY(.104,.104,.011,22,mGold);cr.rotation.x=Math.PI/2;put(cr,.18,.006,.08);g.add(cr);
+  var hh=BX(.006,.003,.052,M(0x1a1a1a,.5));hh.position.set(.18,.017,.108);hh.rotation.set(0,.3,0);g.add(hh);
+  /* neon second hand */
+  var sh=BX(.003,.002,.065,M(0x00d4ff,.1,.1,0x00d4ff,.9));sh.position.set(.18,.020,.08);sh.rotation.set(0,-.8,0);g.add(sh);
+  /* hourglass trio */
+  var hgM=M(0xc8963e,.08,.32);hgM.transparent=true;hgM.opacity=.72;
+  put(CY(.048,.006,.096,12,hgM),.38,.126,-.14);g.add(g.children[g.children.length-1]);
+  put(CY(.006,.048,.096,12,hgM),.38,.030,-.14);g.add(g.children[g.children.length-1]);
+  var hgs=M(0x4a9edd,.08,.32);hgs.transparent=true;hgs.opacity=.70;
+  put(CY(.034,.004,.072,10,hgs),.38,.108,.14);g.add(g.children[g.children.length-1]);
+  put(CY(.004,.034,.072,10,hgs),.38,.036,.14);g.add(g.children[g.children.length-1]);
+  /* Fix: create independently */
+  var h1=CY(.048,.006,.096,12,hgM);put(h1,.38,.126,-.14);g.add(h1);
+  var h2=CY(.006,.048,.096,12,hgM);put(h2,.30,.030,-.14);g.add(h2);
+  var h3=CY(.034,.004,.072,10,hgs);put(h3,.38,.108,.14);g.add(h3);
+  var h4=CY(.004,.034,.072,10,hgs);put(h4,.38,.036,.14);g.add(h4);
+  [0xffcc88,0x88ccff,0xffaacc,0xaaffaa].forEach(function(c,i){
+    var rc=BX(.098,.011,.118,M(c,.38));put(rc,-.14+i*.18,.005,.40);g.add(rc);
+    var ic=SP(.020,M(c*.7,.3));put(ic,-.14+i*.18,.020,.40);g.add(ic);
+  });
+  var agl=new THREE.PointLight(0x44ff88,.0,1.3);agl.position.set(0,.4,0);g.add(agl);comps['rotina'].light=agl;
+  var h=GH(1.02,.24,.96);put(h,0,.12,0);g.add(h);regI(h,'rotina','Rotina Visual');
+})();
+
+/* APRENDIZAGEM */
+(function(){
+  var g=mkComp('aprend',.10,-.06);
+  /* abacus */
+  var abF=BX(.70,.034,.026,mOak);put(abF,0,.21,.30);g.add(abF);
+  var abB=BX(.70,.026,.52,mOak);put(abB,0,.013,.06);g.add(abB);
+  var abT=BX(.70,.026,.026,mOak);put(abT,0,.398,-.20);g.add(abT);
+  var bdc=[0xe84c4c,0xc8963e,0x2ec4b6,0x5c5c9a,0x4caf82];
+  for(var ai=0;ai<5;ai++){
+    var rod=CY(.008,.008,.38,8,mSilv);rod.rotation.x=Math.PI/2;put(rod,-.25+ai*.125,.21,.042);g.add(rod);
+    for(var aj=0;aj<3;aj++){var bd=SP(.042,M(bdc[ai],.20,.10,bdc[ai],.06));put(bd,-.25+ai*.125,.082+aj*.090,.050);g.add(bd);}
+  }
+  /* letter tiles */
+  [0xc8963e,0x5c5c9a,0xc45c5c,0x2ec4b6,0x4caf82,0xe8824a].forEach(function(c,i){
+    var lt=BX(.108,.108,.016,M(c,.32,.05,c,.04));put(lt,-.26+i*.105,.056,-.66);g.add(lt);
+    var lr=BX(.068,.018,.009,M(0xffffff,.28));lr.position.set(lt.position.x,lt.position.y+.059,lt.position.z+.010);g.add(lr);
+  });
+  /* number blocks */
+  [0xf44336,0xe91e63,0x9c27b0,0x3f51b5,0x2196f3].forEach(function(c,i){
+    var nb=BX(.10,.10,.10,M(c,.38,.04,c,.04));put(nb,-.19+i*.096,.050,-.46);g.add(nb);
+    var nf=BX(.078,.018,.009,M(0xffffff,.28));nf.position.set(nb.position.x,nb.position.y+.055,nb.position.z+.050);g.add(nf);
+  });
+  /* puzzle pieces */
+  [0xe84c4c,0xf0a500,0x4a9edd].forEach(function(c,i){
+    var pp=BX(.13,.052,.13,M(c,.40,.04));put(pp,-.18+i*.20,.026,-.28);g.add(pp);
+    var peg=CY(.022,.022,.038,8,M(c,.36));put(peg,-.18+i*.20,.072,-.28);g.add(peg);
+    var nt=BX(.038,.038,.026,M(c*.7,.5));put(nt,-.18+i*.20+.068,.026,-.28);g.add(nt);
+  });
+  /* logic blocks */
+  [0xe84c4c,0xf0a500,0x4a9edd,0x4caf82].forEach(function(c,i){
+    var bl=BX(.096+i%2*.038,.064,.096,M(c,.38));put(bl,-.13+i*.125,.032,-.44);g.add(bl);
+  });
+  var agl=new THREE.PointLight(0xffaa00,.0,1.4);agl.position.set(0,.4,0);g.add(agl);comps['aprend'].light=agl;
+  var h=GH(.84,.44,1.08);put(h,0,.21,-.06);g.add(h);regI(h,'aprend','Aprendizagem Adaptada');
+})();
+
+/* COORDENAÇÃO */
+(function(){
+  var g=mkComp('motor',BW/2-.58,-.78);
+  /* mini labyrinth */
+  var lbBase=BX(.68,.012,.48,M(0xf5f0e8,.52));put(lbBase,0,.006,0);g.add(lbBase);
+  var lwM=M(0x4a7a9b,.45,.1);
+  [[.26,.038,.10,.002,.18],[-.08,.038,.06,.002,.34],[.08,.038,.28,.002,.16]].forEach(function(d){
+    var w=BX(d[0],d[1],d[2],lwM);w.position.set(d[3],d[1]/2+.012,d[4]);lbBase.add(w);
+  });
+  var lball=SP(.019,M(0xe84c4c,.15,.20,0xe84c4c,.20));put(lball,.18,.042,-.08);g.add(lball);
+  /* ring tower */
+  var rtB=CY(.030,.038,.076,12,mOak);put(rtB,.38,.038,0);g.add(rtB);
+  [0xe84c4c,0xf0a500,0x4caf82,0x4a9edd].forEach(function(c,i){
+    var ring=TR(.058+i*.009,.013,18,M(c,.28,.05));ring.rotation.x=Math.PI/2;put(ring,.38,.046+i*.030,0);g.add(ring);
+  });
+  /* pencil grip */
+  var grip=CY(.026,.026,.22,8,M(0xffd700,.28));grip.rotation.z=Math.PI/2;put(grip,-.03,.026,.42);g.add(grip);
+  var pen=CY(.013,.013,.24,8,M(0x333333,.38));pen.rotation.z=Math.PI/2;put(pen,-.04,.026,.42);g.add(pen);
+  /* zipper */
+  var zip=BX(.62,.009,.080,M(0x3a3a3a,.58));put(zip,.04,.005,.54);g.add(zip);
+  for(var zi=0;zi<5;zi++){var zt=CY(.013,.013,.012,8,M(0xc8963e,.18,.72));zt.rotation.x=Math.PI/2;put(zt,-.22+zi*.110,.018,.54);g.add(zt);}
+  /* buttons */
+  [0xe84c4c,0x4a9edd,0xffd700,0x4caf82].forEach(function(c,i){
+    var btn=CY(.030,.030,.010,12,M(c,.28));btn.rotation.x=Math.PI/2;put(btn,-.14+i*.108,.014,-.44);g.add(btn);
+    var bh=CY(.008,.008,.013,6,M(0xffffff,.38));bh.rotation.x=Math.PI/2;put(bh,-.14+i*.108,.015,-.44);g.add(bh);
+  });
+  /* encaixe bar */
+  var eb=BX(.58,.015,.036,M(0x607d8b,.40,.2));put(eb,0,.015,-.28);g.add(eb);
+  [0xe84c4c,0xf0a500,0x4caf82,0x4a9edd,0x8b6fc4].forEach(function(c,i){
+    var peg=CY(.017,.017,.042,8,M(c,.32));put(peg,-.20+i*.10,.040,-.28);g.add(peg);
+  });
+  var agl=new THREE.PointLight(0x4488ff,.0,1.3);agl.position.set(0,.4,0);g.add(agl);comps['motor'].light=agl;
+  var h=GH(1.08,.28,.96);put(h,0,.14,0);g.add(h);regI(h,'motor','Coordenação Motora');
+})();
+
+/* BANNER */
+(function(){
+  var bg=new THREE.Group();bg.position.set(.20,2.10,-4.88);scene.add(bg);
+  [-2.58,2.58].forEach(function(x){
+    var p=CY(.030,.030,5.6,8,mSilv);p.position.set(x,-.40,0);bg.add(p);
+    var pr=TR(.030,.005,12,mNeon);pr.rotation.x=Math.PI/2;pr.position.set(x,.42,0);bg.add(pr);
+  });
+  var bkg=BX(5.16,3.58,.026,M(0x040c18,.96));put(bkg,0,.26,0);bg.add(bkg);
+  var topB=BX(5.16,.30,.032,M(0x081828,.92,0,0x00d4ff,.10));put(topB,0,1.95,.004);bg.add(topB);
+  var logoBn=BX(2.30,.27,.042,M(0xc8963e,.16,.72,0xaa7000,.36));put(logoBn,0,1.52,.016);bg.add(logoBn);
+  var subBn=BX(4.5,.14,.032,M(0x0a2030,.92));put(subBn,0,1.04,.014);bg.add(subBn);
+  /* neon borders */
+  var bTop2=BX(5.16,.004,.032,mNeon);put(bTop2,0,2.08,.002);bg.add(bTop2);
+  var bBot2=BX(5.16,.004,.032,mNeon);put(bBot2,0,-1.52,.002);bg.add(bBot2);
+  [.46,.74,.60,.90,.67].forEach(function(h,i){
+    var bar=BX(.20,h,.042,M([0x2ec4b6,0xf0a500,0x8b6fc4,0xe05c6e,0x4caf82][i],.28,0,[0x2ec4b6,0xf0a500,0x8b6fc4,0xe05c6e,0x4caf82][i],.08));
+    bar.position.set(-1.55+i*.70,.38+h/2-.28,.022);bg.add(bar);
+  });
+  [-1.52,0,1.52].forEach(function(x,i){
+    var fr=BX(.82,.64,.032,mOak);put(fr,x,-.40,.012);bg.add(fr);
+    var ph=BX(.76,.58,.022,M([0xffe0c0,0xc0e0ff,0xc0ffc8][i],.58));put(ph,x,-.40,.026);bg.add(ph);
+    var ic=CY(.098,.098,.009,12,M([0xe8824a,0x4a9edd,0x4caf82][i],.28));ic.rotation.x=Math.PI/2;put(ic,x,-.40,.036);bg.add(ic);
+  });
+})();
+
+/* TABLE EXTRAS */
+[0x2ec4b6,0xf0a500,0x8b6fc4].forEach(function(c,i){var br=BX(.40,.012,.26,M(c,.42));br.position.set(2.82,.028+i*.014,-.50-i*.020);br.rotation.y=.055*i;scene.add(br);});
+var np=BX(1.12,.052,.15,mGold);put(np,2.52,.026,.92);scene.add(np);
+var npn=BX(.98,.003,.003,mNeon);put(npn,2.52,.056,.92);scene.add(npn);
+var bdr=BX(.085,.52,.36,M(0x0d2540,.48));bdr.position.set(3.04,.30,.12);bdr.rotation.set(-.04,.10,0);scene.add(bdr);
+
+/* PARTICLES */
+var pG=new THREE.BufferGeometry(),pN=isMobile?180:300,pA=new Float32Array(pN*3);
+for(var pi=0;pi<pN;pi++){pA[pi*3]=(Math.random()-.5)*22;pA[pi*3+1]=Math.random()*9-1;pA[pi*3+2]=(Math.random()-.5)*14;}
+pG.setAttribute('position',new THREE.BufferAttribute(pA,3));
+var ptcls=new THREE.Points(pG,new THREE.PointsMaterial({color:0x003355,size:.022,transparent:true,opacity:.22}));
+scene.add(ptcls);
+/* neon particles */
+var pG2=new THREE.BufferGeometry(),pA2=new Float32Array(50*3);
+for(var pi2=0;pi2<50;pi2++){pA2[pi2*3]=(Math.random()-.5)*10;pA2[pi2*3+1]=Math.random()*5;pA2[pi2*3+2]=(Math.random()-.5)*7;}
+pG2.setAttribute('position',new THREE.BufferAttribute(pA2,3));
+var ptcls2=new THREE.Points(pG2,new THREE.PointsMaterial({color:0x00d4ff,size:.016,transparent:true,opacity:.16}));
+scene.add(ptcls2);
+
+/* ═══════════════════════════════════════════
+   6. LIGHTING
+═══════════════════════════════════════════ */
+scene.add(new THREE.AmbientLight(0xfff4f0,.35));
+scene.add(new THREE.AmbientLight(0x001428,.20));
+
+var kl=new THREE.DirectionalLight(0xfff4e8,2.6);
+kl.position.set(-5,10,6);
+if(!isMobile){
+  kl.castShadow=true;
+  kl.shadow.mapSize.width=1024;kl.shadow.mapSize.height=1024;
+  kl.shadow.camera.near=.5;kl.shadow.camera.far=38;
+  kl.shadow.camera.left=-10;kl.shadow.camera.right=10;
+  kl.shadow.camera.top=10;kl.shadow.camera.bottom=-10;
+  kl.shadow.bias=-.0007;
+}
+var light1 = new THREE.DirectionalLight(0xb0c8ff, .55);
+light1.position.set(7, 5, -5);
+scene.add(light1);
+
+var light2 = new THREE.DirectionalLight(0x204060, .28);
+light2.position.set(0, 5, -11);
+scene.add(light2);
+scene.add(kl);
+
+var sp1=new THREE.SpotLight(0xfff8f0,4.0,15,Math.PI/5.2,.42,1.5);
+sp1.position.set(1,8,4);sp1.target.position.set(-.18,.5,0);if(!isMobile)sp1.castShadow=true;
+scene.add(sp1);scene.add(sp1.target);
+
+var sp2=new THREE.SpotLight(0xfff0d8,1.7,20,Math.PI/7.5,.52,1.3);
+sp2.position.set(-4,7,-1);sp2.target.position.set(.2,2.1,-4.9);scene.add(sp2);scene.add(sp2.target);
+
+var light3=new THREE.DirectionalLight(0x00aacc,.15);
+light3.position.set(0,-2,8);
+scene.add(light3);
+
+var logoGl=new THREE.PointLight(0xd4880a,.55,2.4);
+logoGl.position.set(boxG.position.x,boxG.position.y+BH/2+1.2,-BD/2+boxG.position.z+.2);scene.add(logoGl);
+
+var aLights={};
+Object.keys(D).forEach(function(k){var al=new THREE.PointLight(new THREE.Color(D[k].color),.0,2.2);scene.add(al);aLights[k]=al;});
+Object.keys(comps).forEach(function(k){
+  var c=comps[k];
+  if(aLights[k]) aLights[k].position.set(boxG.position.x+c.ox,boxG.position.y+BY+.34,boxG.position.z+c.oz);
+  c.tx=0;c.tz=0;
+});
+
+/* ═══════════════════════════════════════════
+   7. RAYCASTER + TOUCH INTERACTION
+═══════════════════════════════════════════ */
+var ray=new THREE.Raycaster(),m2=new THREE.Vector2();
+var tipEl=document.getElementById('tip');
+
+function getHit(ex,ey){
+  var r=canvas.getBoundingClientRect();
+  m2.x=((ex-r.left)/r.width)*2-1;m2.y=-((ey-r.top)/r.height)*2+1;
+  ray.setFromCamera(m2,camera);
+  var hits=ray.intersectObjects(interactives);
+  return hits.length?hits[0]:null;
+}
+
+/* Mouse hover */
+canvas.addEventListener('mousemove',function(e){
+  var hit=getHit(e.clientX,e.clientY);
+  if(hit&&D[hit.object.userData.key]){
+    var d=D[hit.object.userData.key];
+    canvas.classList.add('pt');
+    document.getElementById('tipdot').style.background=d.color;
+    document.getElementById('tiptext').textContent=hit.object.userData.lbl;
+    tipEl.style.left=(e.clientX+14)+'px';tipEl.style.top=(e.clientY-10)+'px';
+    tipEl.classList.add('on');
+  } else {canvas.classList.remove('pt');tipEl.classList.remove('on');}
+});
+
+/* Click */
+canvas.addEventListener('click',function(e){
+  if(moved)return;
+  var hit=getHit(e.clientX,e.clientY);
+  if(hit&&hit.object.userData.key){ripple(e.clientX,e.clientY);openArea(hit.object.userData.key);}
+});
+
+/* Touch tap */
+var touchStartX=0,touchStartY=0,touchT=0;
+canvas.addEventListener('touchstart',function(e){
+  touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;touchT=Date.now();
+},{passive:true});
+canvas.addEventListener('touchend',function(e){
+  var dt=Date.now()-touchT;
+  var dx=e.changedTouches[0].clientX-touchStartX;
+  var dy=e.changedTouches[0].clientY-touchStartY;
+  var dist=Math.sqrt(dx*dx+dy*dy);
+  if(dt<300&&dist<12){
+    var hit=getHit(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+    if(hit&&hit.object.userData.key){
+      ripple(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+      openArea(hit.object.userData.key);
+    }
+  }
+},{passive:true});
+
+/* Touch ripple effect */
+function ripple(x,y){
+  var r=document.createElement('div');r.className='ripple';
+  var s=80;r.style.cssText='width:'+s+'px;height:'+s+'px;left:'+(x-s/2)+'px;top:'+(y-s/2)+'px;';
+  document.body.appendChild(r);
+  setTimeout(function(){document.body.removeChild(r);},520);
+}
+
+/* Badge buttons */
+document.querySelectorAll('.ab').forEach(function(el){
+  el.addEventListener('click',function(){openArea(el.dataset.a);});
+  el.addEventListener('touchend',function(e){e.preventDefault();openArea(el.dataset.a);});
+});
+
+/* ═══════════════════════════════════════════
+   8. DRAWER ANIMATION
+═══════════════════════════════════════════ */
+var activeComp=null;
+function openDrawer(key){
+  if(activeComp&&activeComp!==key) closeDrawer(activeComp);
+  activeComp=key;
+  var dx=(key==='sensorial'||key==='braille')?-SLIDE:(key==='motor'||key==='aac')?SLIDE:0;
+  var dz=(key==='rotina')?SLIDE:(key==='aprend')?0:(key==='sensorial'||key==='aac')?SLIDE*.5:-SLIDE*.5;
+  comps[key].tx=dx;comps[key].tz=dz;comps[key].open=true;
+  if(aLights[key]) aLights[key].intensity=1.3;
+  if(comps[key].light) comps[key].light.intensity=.85;
+}
+function closeDrawer(key){
+  if(!comps[key])return;
+  comps[key].tx=0;comps[key].tz=0;comps[key].open=false;
+  if(aLights[key]) aLights[key].intensity=0;
+  if(comps[key].light) comps[key].light.intensity=0;
+}
+
+/* ═══════════════════════════════════════════
+   9. PANEL
+═══════════════════════════════════════════ */
+var panelOpen=false,curArea=null;
+
+function openArea(key){
+  var d=D[key];if(!d)return;
+  curArea=key;panelOpen=true;
+  var p=document.getElementById('panel');
+  p.style.setProperty('--pc',d.color);
+  document.getElementById('p-ico').textContent=d.icon;
+  document.getElementById('p-ico').style.cssText='background:'+d.color+'18;border-color:'+d.color+'44;';
+  document.getElementById('p-tag').textContent='Área Pedagógica';
+  document.getElementById('p-tag').style.color=d.color;
+  document.getElementById('p-title').textContent=d.label;
+  document.querySelectorAll('.pt').forEach(function(t){t.style.setProperty('--pc',d.color);});
+
+  document.getElementById('t0').innerHTML=
+    '<p class="pdesc">'+d.overview+'</p>'+
+    '<div class="psec">Materiais na Caixa</div>'+
+    d.items.map(function(it){return '<div class="pcard"><div class="pch"><span class="pci">'+it.icon+'</span><span class="pcn">'+it.name+'</span></div><div class="pcd">'+it.desc+'</div></div>';}).join('')+
+    '<div class="psec">Perfis Atendidos</div><div class="ptags">'+
+    d.nee.map(function(n){return '<span class="ptag" style="color:'+d.color+';border-color:'+d.color+'44">'+n+'</span>';}).join('')+'</div>';
+  document.getElementById('t1').innerHTML='<div class="psec">Função Pedagógica</div><p class="pdesc">'+d.pedagogy+'</p>';
+  document.getElementById('t2').innerHTML='<div class="psec">Fundamentação Científica</div><div class="pqt">'+d.science+'</div>';
+  document.getElementById('t3').innerHTML='<div class="psec">Benefícios Esperados</div>'+d.benefits.map(function(b){return '<div class="pben"><div class="pbdot" style="background:'+d.color+'"></div><div><div class="pbt">'+b.t+'</div><div class="pbd">'+b.d+'</div></div></div>';}).join('');
+  document.getElementById('t4').innerHTML='<div class="psec">Como Utilizar em Sala</div>'+d.application.map(function(s,i){return '<div class="pstep"><div class="psn" style="background:'+d.color+'18;color:'+d.color+'">'+(i+1)+'</div><div><div class="pst">'+s.t+'</div><div class="psd">'+s.d+'</div></div></div>';}).join('');
+
+  setTab(0);
+  p.classList.add('on');
+  tsph.t=d.cam.t;tsph.p=d.cam.p;tsph.r=d.cam.r;
+  openDrawer(key);
+  document.getElementById('vign').classList.add('on');
+  document.querySelectorAll('.ab').forEach(function(b){b.classList.toggle('on',b.dataset.a===key);});
+  setBc(d.label);
+}
+
+function closePanel(){
+  document.getElementById('panel').classList.remove('on');
+  panelOpen=false;
+  if(curArea){closeDrawer(curArea);curArea=null;}
+  document.querySelectorAll('.ab').forEach(function(b){b.classList.remove('on');});
+  document.getElementById('vign').classList.remove('on');
+  tsph.t=.48;tsph.p=.98;tsph.r=8.0;
+  setBc(null);
+}
+window.closePanel=closePanel;
+
+function setTab(n){
+  document.querySelectorAll('.pt').forEach(function(t,i){t.classList.toggle('on',i===n);});
+  document.querySelectorAll('.tp').forEach(function(p,i){p.classList.toggle('on',i===n);});
+}
+window.setTab=setTab;
+
+/* Panel swipe to close */
+var panelStartY=0;
+var panel=document.getElementById('panel');
+panel.addEventListener('touchstart',function(e){panelStartY=e.touches[0].clientY;},{passive:true});
+panel.addEventListener('touchend',function(e){
+  var dy=e.changedTouches[0].clientY-panelStartY;
+  if(dy>60) closePanel();
+},{passive:true});
+
+/* ═══════════════════════════════════════════
+   10. NAV + OVERLAYS
+═══════════════════════════════════════════ */
+function setBc(area){
+  var bc=document.getElementById('bc');
+  if(!area){bc.classList.remove('on');return;}
+  bc.classList.add('on');
+  document.getElementById('bc2s').style.display='inline';
+  document.getElementById('bc2t').style.display='inline';
+  document.getElementById('bc2t').textContent=area;
+}
+function goHome(){closePanel();closeAllOvs();syncNav('home');setBc(null);}
+window.goHome=goHome;
+
+var OVM={areas:'fo-areas',research:'fo-research',resources:'fo-resources',pres:'fo-pres',cfg:'fo-cfg'};
+function closeAllOvs(){Object.values(OVM).forEach(function(id){document.getElementById(id).classList.remove('on');});document.getElementById('badges').classList.remove('hide');}
+function closeOv(id){document.getElementById(id).classList.remove('on');document.getElementById('badges').classList.remove('hide');syncNav('home');setBc(null);}
+window.closeOv=closeOv;
+function syncNav(n){document.querySelectorAll('.ni').forEach(function(b){b.classList.toggle('on',b.dataset.n===n);});}
+function navTo(n){
+  syncNav(n);
+  if(n==='home'){closePanel();closeAllOvs();setBc(null);return;}
+  closeAllOvs();closePanel();
+  var id=OVM[n];if(!id)return;
+  document.getElementById('badges').classList.add('hide');
+  document.getElementById(id).classList.add('on');
+  setBc({areas:'Áreas',research:'Pesquisa',resources:'Recursos',pres:'Projeto',cfg:'Configurações'}[n]);
+}
+window.navTo=navTo;
+
+/* ── POPULATE AREAS ──────────────────── */
+document.getElementById('fo-areas-b').innerHTML=
+  '<div class="agrid">'+Object.keys(D).map(function(k){var d=D[k];return(
+    '<div class="acard" style="--ac:'+d.color+'" onclick="openAreaOv(\''+k+'\')">'+
+    '<div class="ac-top"><span class="ac-ico">'+d.icon+'</span><span class="ac-name">'+d.label+'</span></div>'+
+    '<div class="ac-desc">'+d.overview.substring(0,80)+'…</div></div>'
+  );}).join('')+'</div>';
+window.openAreaOv=function(k){closeOv('fo-areas');syncNav('home');openArea(k);};
+
+/* ── POPULATE RESEARCH ───────────────── */
+(function(){
+  var tabs=[
+    {l:'Problema',c:'<p class="pdesc"><strong>Além da Matrícula: Inclusão Real ou Presença Invisível?</strong></p><p style="font-size:12px;line-height:1.7;color:rgba(234,228,219,.58);margin-top:10px">A matrícula de crianças com NEE nas escolas comuns cresceu 137% entre 2013 e 2023 (INEP). Porém, pesquisas indicam que a presença física em sala regular não garante participação, aprendizagem ou desenvolvimento. O SensIncluir® investiga o que diferencia inclusão real de presença invisível.</p>'},
+    {l:'Objetivo',c:'<p class="pdesc">Desenvolver, implementar e avaliar um sistema pedagógico multissensorial como suporte à inclusão efetiva de crianças com NEE em escolas públicas do Ensino Fundamental I.</p><div class="psec">Objetivos Específicos</div>'+['Identificar barreiras pedagógicas à inclusão','Mapear recursos e suas limitações práticas','Desenvolver e prototipar o SensIncluir®','Avaliar impacto na participação e aprendizagem','Propor modelo replicável de baixo custo'].map(function(o,i){return '<div class="pstep"><div class="psn">'+(i+1)+'</div><div class="psd">'+o+'</div></div>';}).join('')},
+    {l:'Metodologia',c:'<p class="pdesc">Pesquisa-ação participante com abordagem mista.</p>'+['Diagnóstico situacional em escolas públicas','Revisão sistemática (Web of Science, Scopus, CAPES)','Desenvolvimento e prototipação','Implementação piloto com coleta de dados','Avaliação por instrumentos validados (PEDI, AUQEI)'].map(function(s,i){return '<div class="pstep"><div class="psn">'+(i+1)+'</div><div><div class="pst">Etapa '+(i+1)+'</div><div class="psd">'+s+'</div></div></div>';}).join('')},
+    {l:'Público-Alvo',c:'<p class="pdesc">Crianças com NEE em escolas públicas.</p><div class="ptags" style="margin-top:10px">'+['TEA','TDAH','Def. Visual','Def. Intelectual','Paralisia Cerebral','Mutismo Seletivo','Dislexia','Síndrome de Down'].map(function(n){return '<span class="ptag" style="color:#00d4ff;border-color:rgba(0,212,255,.25)">'+n+'</span>';}).join('')+'</div><div class="psec">Base Legal</div><div class="pqt">LDB Lei 9.394/96 · LBI Lei 13.146/2015 · Política Nacional de Educação Especial (MEC, 2008)</div>'},
+    {l:'Resultados',c:'<p class="pdesc">Pesquisa em fase de desenvolvimento. Resultados esperados:</p>'+['Redução de barreiras pedagógicas para estudantes com NEE','Maior participação em atividades curriculares','Desenvolvimento de autonomia, comunicação e cognição','Modelo replicável de baixo custo','Formação de professores em práticas inclusivas'].map(function(r){return '<div class="pben"><div class="pbdot" style="background:#00d4ff"></div><div><div class="pbd">'+r+'</div></div></div>';}).join('')},
+    {l:'Base Teórica',c:'<div class="psec">Referências</div>'+[{t:'Integração Sensorial',d:'Ayres, 1972'},{t:'DUA — Design Universal',d:'CAST, 2018'},{t:'Modelo TEACCH',d:'Schopler, 1972'},{t:'Teoria Histórico-Cultural',d:'Vygotsky'},{t:'Currículo em Espiral',d:'Bruner'},{t:'DIR/Floortime',d:'Greenspan'}].map(function(r){return '<div class="pcard"><div class="pcn">'+r.t+'</div><div class="pcd">'+r.d+'</div></div>';}).join('')},
+    {l:'Ética',c:'<p class="pdesc">A ser submetido ao CEP conforme Resolução CNS 510/2016.</p>'+['TCLE e assente do estudante por faixa etária','Anonimização completa dos dados','Aprovação pelo CEP antes da coleta','Retorno dos resultados à comunidade escolar'].map(function(c){return '<div class="pben"><div class="pbdot" style="background:#e8a020"></div><div><div class="pbd">'+c+'</div></div></div>';}).join('')},
+  ];
+  var rt=document.getElementById('rtabs'),rp=document.getElementById('rpanes');
+  tabs.forEach(function(tab,i){
+    var btn=document.createElement('button');btn.className='rt'+(i===0?' on':'');btn.textContent=tab.l;
+    btn.onclick=function(){document.querySelectorAll('.rt').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');document.querySelectorAll('.rp').forEach(function(p,j){p.classList.toggle('on',j===i);});};
+    rt.appendChild(btn);
+    var pane=document.createElement('div');pane.className='rp'+(i===0?' on':'');pane.innerHTML=tab.c;rp.appendChild(pane);
+  });
+})();
+
+/* ── POPULATE RESOURCES ──────────────── */
+(function(){
+  var all=[];Object.keys(D).forEach(function(k){D[k].items.forEach(function(it){all.push({color:D[k].color,area:D[k].label,icon:it.icon,name:it.name,desc:it.desc});});});
+  document.getElementById('fo-res-b').innerHTML=all.map(function(r){
+    return '<div class="ri"><div class="ri-ico">'+r.icon+'</div><div><div class="ri-name">'+r.name+'</div><div class="ri-desc">'+r.desc+'</div>'+
+      '<div style="margin-top:4px"><span class="ptag" style="font-size:8px;color:'+r.color+';border-color:'+r.color+'44">'+r.area+'</span></div></div></div>';
+  }).join('');
+})();
+
+/* ── POPULATE PRES ───────────────────── */
+document.getElementById('fo-pres-b').innerHTML=[
+  {ico:'🎯',t:'Sistema SensIncluir®',d:'Caixa pedagógica multissensorial desenvolvida como protótipo de iniciação científica para apoiar professores de escolas públicas na inclusão efetiva de estudantes com NEE.'},
+  {ico:'💡',t:'Aprender sem barreiras',d:'Slogan que sintetiza a missão: eliminar obstáculos pedagógicos, tecnológicos e comunicacionais que impedem crianças com NEE de participar plenamente do ambiente escolar.'},
+  {ico:'🏫',t:'Contexto',d:'Para escolas públicas brasileiras onde professores frequentemente carecem de formação específica. Propõe solução de baixo custo e fácil implementação.'},
+  {ico:'⚗️',t:'Status do Projeto',d:'Em fase de pesquisa e desenvolvimento. Este protótipo 3D representa a concepção do sistema. Validação prática em etapas posteriores.'},
+  {ico:'📌',t:'Alinhamento Legal',d:'LDB 9.394/96 · Lei Brasileira de Inclusão 13.146/2015 · Política Nacional de Educação Especial (MEC, 2008)'},
+].map(function(c){return '<div class="prescard"><div class="prescard-t"><span>'+c.ico+'</span>'+c.t+'</div><div class="prescard-d">'+c.d+'</div></div>';}).join('');
+
+/* ── POPULATE CONFIG ─────────────────── */
+document.getElementById('fo-cfg-b').innerHTML=
+  '<div class="psec">Visualização</div>'+
+  [['Partículas animadas','Efeito de profundidade no cenário 3D'],['Névoa ambiente','Fog volumétrico'],['Destaque ao selecionar','Vinheta cinematográfica'],['Som de toque','Feedback sonoro ao interagir']].map(function(c,i){
+    return '<div class="cfgrow"><div><div class="cfglbl">'+c[0]+'</div><div class="cfgsub">'+c[1]+'</div></div>'+
+      '<button class="tog'+(i<2?' on':'')+'" onclick="this.classList.toggle(\'on\')"></button></div>';
+  }).join('')+
+  '<div class="psec" style="margin-top:16px">Sobre o Sistema</div>'+
+  '<div class="prescard"><div class="prescard-d">Sistema SensIncluir® · Versão Mobile 4.0<br>"Aprender sem barreiras"<br>Tecnologia Inclusiva Educacional<br><br>Motor 3D: Three.js r128 · WebGL<br>Optimizado para celular · Offline após carregamento</div></div>';
+
+/* ═══════════════════════════════════════════
+   11. ANIMATION LOOP
+═══════════════════════════════════════════ */
+var aT=0,lastTime=0;
+/* intro camera sweep */
+sph.t=.10;sph.p=.54;sph.r=12;tsph.t=.48;tsph.p=.98;tsph.r=8.0;
+
+function animate(now){
+  requestAnimationFrame(animate);
+  var dt=Math.min((now-lastTime)/16.7,3);lastTime=now;
+  aT+=.010*dt;
+
+  updateCam();
+
+  if(!panelOpen){
+    boxG.position.y=.10+Math.sin(aT*.66)*.018;
+    boxG.rotation.y=Math.sin(aT*.20)*.020;
+  }
+  lidPiv.rotation.x=-Math.PI*.618+Math.sin(aT*.44)*.009;
+  mScreen.emissiveIntensity=.58+Math.sin(aT*1.8)*.22;
+  mNeon.emissiveIntensity=.70+Math.sin(aT*2.4)*.08;
+  logoGl.intensity=.52+Math.sin(aT*.8)*.14;
+
+  /* drawer slide */
+  Object.keys(comps).forEach(function(k){
+    var c=comps[k];
+    c.grp.position.x=lerp(c.grp.position.x,c.ox+c.tx,.12);
+    c.grp.position.z=lerp(c.grp.position.z,c.oz+c.tz,.12);
+  });
+
+  /* particles */
+  var pa=ptcls.geometry.attributes.position.array;
+  for(var i=0;i<pN;i++){pa[i*3+1]+=.004*dt;if(pa[i*3+1]>9)pa[i*3+1]=-1;}
+  ptcls.geometry.attributes.position.needsUpdate=true;
+  var pa2=ptcls2.geometry.attributes.position.array;
+  for(var j=0;j<50;j++){pa2[j*3+1]+=.006*dt;if(pa2[j*3+1]>5)pa2[j*3+1]=-1;}
+  ptcls2.geometry.attributes.position.needsUpdate=true;
+
+  /* resize */
+  var cw=canvas.clientWidth,ch=canvas.clientHeight;
+  if(canvas.width!==cw||canvas.height!==ch){renderer.setSize(cw,ch,false);camera.aspect=cw/ch;camera.updateProjectionMatrix();}
+
+  renderer.render(scene,camera);
+}
+
+/* ═══════════════════════════════════════════
+   12. LOADING
+═══════════════════════════════════════════ */
+var lf=document.getElementById('lf'),ldm=document.getElementById('ldm');
+var msgs=['Construindo caixa pedagógica…','Preenchendo compartimentos…','Configurando iluminação…','Adicionando materiais…','Finalizando…'];
+var prog=0,mi=0;
+var li=setInterval(function(){
+  prog+=Math.random()*14+8;if(prog>100)prog=100;
+  lf.style.width=prog+'%';
+  if(mi<msgs.length&&prog>mi*22)ldm.textContent=msgs[mi++];
+  if(prog>=100){
+    clearInterval(li);
+    setTimeout(function(){
+      document.getElementById('ld').classList.add('out');
+      requestAnimationFrame(animate);
+      setTimeout(function(){
+        document.getElementById('hints').classList.remove('gone');
+        setTimeout(function(){document.getElementById('hints').classList.add('gone');},6000);
+      },800);
+    },380);
+  }
+},60);
+
+}catch(e){
+  document.getElementById('ld').classList.add('out');
+  document.getElementById('err').classList.add('show');
+  document.getElementById('errtxt').textContent='Tipo: '+e.name+'\nMensagem: '+e.message+(e.stack?'\n'+e.stack:'');
+}
+</script>
+<footer style="
+position: absolute;
+top: 90px;
+right: 20px;
+background: transparent;
+padding: 0;
+border-radius: 0;
+color: #cbd5e1;
+font-family: Arial, Helvetica, sans-serif;
+z-index: 9999;
+">
+
+  <div style="
+  margin-top:6px;
+  font-size:15px;
+  font-weight:600;
+  color:white;
+  ">
+    Maria Julya F.
+  </div>
+
+  <div style="
+  margin-top:4px;
+  font-size:13px;
+  color:#94a3b8;
+  ">
+    julyafonseca227@gmail.com
+  </div>
+
+</footer>
+  </body>
+</html>
+      
